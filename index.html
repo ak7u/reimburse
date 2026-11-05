@@ -98,12 +98,11 @@
     <!-- TABEL REKAPITULASI SPREADSHEET -->
     <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
       
-      <!-- Toolbar Tabel dengan Selector Periode Bulan & Tahun -->
+      <!-- Toolbar Tabel -->
       <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <div class="flex items-center gap-2">
             <h3 class="font-semibold text-slate-800">Tabel Rekapitulasi - </h3>
-            <!-- Selector Bulan & Tahun -->
             <select id="selectBulan" onchange="changePeriod()" class="font-semibold text-slate-800 bg-white border border-slate-300 rounded px-2.5 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm">
               <option value="0">Januari</option>
               <option value="1">Februari</option>
@@ -139,7 +138,7 @@
         </div>
       </div>
 
-      <!-- FILTER STATUS TAMPILAN TABEL -->
+      <!-- FILTER STATUS -->
       <div class="p-3 bg-slate-100/70 border-b border-slate-200 flex flex-wrap items-center gap-2 text-xs no-print">
         <span class="font-semibold text-slate-500 mr-1 flex items-center gap-1">
           <i data-lucide="filter" class="w-3.5 h-3.5"></i> Filter Status:
@@ -158,7 +157,7 @@
         </button>
       </div>
 
-      <!-- Container Tabel Utama -->
+      <!-- TABEL UTAMA -->
       <div class="overflow-x-auto">
         <table class="w-full text-sm text-left border-collapse">
           <thead>
@@ -173,7 +172,6 @@
             </tr>
           </thead>
           <tbody id="tableBody" class="divide-y divide-slate-200">
-            <!-- Data baris dirender lewat JavaScript -->
           </tbody>
           <tfoot>
             <tr class="bg-slate-100 font-bold text-slate-900 border-t-2 border-slate-400">
@@ -186,14 +184,13 @@
       </div>
     </div>
 
-    <!-- TABEL RINGKASAN STATUS PEMBAYARAN -->
+    <!-- RINGKASAN STATUS PEMBAYARAN -->
     <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-200">
       <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-2">
         <i data-lucide="pie-chart" class="w-4 h-4 text-blue-600"></i> Ringkasan Status Pembayaran
       </h4>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         
-        <!-- Box Sudah Dibayar -->
         <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-lg flex justify-between items-center shadow-sm">
           <div>
             <p class="text-xs font-semibold text-emerald-700 uppercase">🟢 Sudah Dibayar</p>
@@ -202,7 +199,6 @@
           <i data-lucide="check-circle-2" class="w-8 h-8 text-emerald-500 opacity-80"></i>
         </div>
 
-        <!-- Box Belum Dibayar -->
         <div class="bg-rose-50 border border-rose-200 p-4 rounded-lg flex justify-between items-center shadow-sm">
           <div>
             <p class="text-xs font-semibold text-rose-700 uppercase">🔴 Belum Dibayar</p>
@@ -211,7 +207,6 @@
           <i data-lucide="clock" class="w-8 h-8 text-rose-500 opacity-80"></i>
         </div>
 
-        <!-- Box Total Keseluruhan -->
         <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg flex justify-between items-center shadow-sm">
           <div>
             <p class="text-xs font-semibold text-slate-600 uppercase">📊 Total Keseluruhan</p>
@@ -226,18 +221,18 @@
   </div>
 
   <script>
-    // --- KONFIGURASI FIREBASE ---
+    // --- KONFIGURASI FIREBASE (SUDAH DILENGKAPI DATABASEURL) ---
     const firebaseConfig = {
-    apiKey: "AIzaSyDPE8QEXJjJqozRlmcLoPBQhOWqw9VTHBM",
-    authDomain: "reimburse-app-ba07a.firebaseapp.com",
-    projectId: "reimburse-app-ba07a",
-    storageBucket: "reimburse-app-ba07a.firebasestorage.app",
-    messagingSenderId: "474112487826",
-    appId: "1:474112487826:web:3569ba9be82397e177914b",
-    measurementId: "G-2Y9RZHFMLV"
-  };
+      apiKey: "AIzaSyDPE8QEXJjJqozRlmcLoPBQhOWqw9VTHBM",
+      authDomain: "reimburse-app-ba07a.firebaseapp.com",
+      databaseURL: "https://reimburse-app-ba07a-default-rtdb.firebaseio.com",
+      projectId: "reimburse-app-ba07a",
+      storageBucket: "reimburse-app-ba07a.firebasestorage.app",
+      messagingSenderId: "474112487826",
+      appId: "1:474112487826:web:3569ba9be82397e177914b",
+      measurementId: "G-2Y9RZHFMLV"
+    };
 
-    // Inisialisasi Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
@@ -250,6 +245,7 @@
     let selectedYear = 2026;
     let activeFilter = 'semua'; 
     let tableData = {};
+    let dbRefListener = null;
 
     function getStorageKey() {
       return `reimburse_${selectedYear}_${selectedMonth}`;
@@ -275,48 +271,54 @@
       });
     }
 
-    // Mendengarkan Perubahan Data secara Real-time dari Firebase Cloud
+    function generateEmptyMonthData() {
+      const emptyData = {};
+      const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+      
+      for (let i = 1; i <= daysInMonth; i++) {
+        const dayNum = String(i).padStart(2, '0');
+        const monthNum = String(selectedMonth + 1).padStart(2, '0');
+        const dateStr = `${dayNum}/${monthNum}/${selectedYear}`;
+        const dateObj = new Date(selectedYear, selectedMonth, i);
+        const hariStr = NAMA_HARI[dateObj.getDay()];
+        
+        emptyData[dateStr] = {
+          tanggal: dateStr,
+          hari: hariStr,
+          pergi: '',
+          pulang: '',
+          keterangan: '',
+          status: 'Belum Dibayar'
+        };
+      }
+      return emptyData;
+    }
+
     function initData() {
       const storageKey = getStorageKey();
-      const dbRef = db.ref(storageKey);
+      
+      if (dbRefListener) {
+        dbRefListener.off();
+      }
 
-      dbRef.on('value', (snapshot) => {
+      dbRefListener = db.ref(storageKey);
+      dbRefListener.on('value', (snapshot) => {
         const saved = snapshot.val();
+        const baseEmpty = generateEmptyMonthData();
         
         if (saved) {
-          tableData = saved;
-          Object.keys(tableData).forEach(k => {
-            if (tableData[k].status === 'Proses Verifikasi') {
-              tableData[k].status = 'Belum Dibayar';
+          Object.keys(baseEmpty).forEach(dateKey => {
+            if (saved[dateKey]) {
+              baseEmpty[dateKey] = saved[dateKey];
             }
           });
-        } else {
-          tableData = {};
-          const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
-          
-          for (let i = 1; i <= daysInMonth; i++) {
-            const dayNum = String(i).padStart(2, '0');
-            const monthNum = String(selectedMonth + 1).padStart(2, '0');
-            const dateStr = `${dayNum}/${monthNum}/${selectedYear}`;
-            const dateObj = new Date(selectedYear, selectedMonth, i);
-            const hariStr = NAMA_HARI[dateObj.getDay()];
-            
-            tableData[dateStr] = {
-              tanggal: dateStr,
-              hari: hariStr,
-              pergi: '',
-              pulang: '',
-              keterangan: '',
-              status: 'Belum Dibayar'
-            };
-          }
-          saveData();
         }
+        
+        tableData = baseEmpty;
         renderTable();
       });
     }
 
-    // Menyimpan Data ke Firebase Cloud (Otomatis Tersinkron ke Seluruh Perangkat)
     function saveData() {
       const storageKey = getStorageKey();
       db.ref(storageKey).set(tableData);
@@ -369,7 +371,6 @@
       let totalKeseluruhan = 0;
       let totalSudahDibayar = 0;
       let totalBelumDibayar = 0;
-
       let cntSemua = 0, cntBelum = 0, cntSudah = 0, cntKosong = 0;
 
       const isAdmin = currentRole === 'admin';
@@ -384,7 +385,7 @@
                            (!item.pulang || item.pulang === '-') && 
                            (!item.keterangan || item.keterangan === '-');
 
-        let statusEfektif = item.status;
+        let statusEfektif = item.status || 'Belum Dibayar';
         if (isRowEmpty) {
           statusEfektif = 'Tidak Ada Pengajuan';
         }
@@ -445,8 +446,8 @@
           <td class="py-2.5 px-3 text-center">
             ${isAdmin ? `
               <select onchange="updateStatus('${dateStr}', this.value)" class="text-xs font-semibold py-1 px-2 rounded border focus:outline-none cursor-pointer ${statusBadgeClass}">
-                <option value="Belum Dibayar" ${item.status === 'Belum Dibayar' ? 'selected' : ''}>🔴 Belum Dibayar</option>
-                <option value="Sudah Dibayar" ${item.status === 'Sudah Dibayar' ? 'selected' : ''}>🟢 Sudah Dibayar</option>
+                <option value="Belum Dibayar" ${statusEfektif === 'Belum Dibayar' ? 'selected' : ''}>🔴 Belum Dibayar</option>
+                <option value="Sudah Dibayar" ${statusEfektif === 'Sudah Dibayar' ? 'selected' : ''}>🟢 Sudah Dibayar</option>
               </select>
             ` : (isRowEmpty ? `
               <span class="inline-block px-2.5 py-1 text-xs font-semibold rounded-full border bg-slate-100 text-slate-400 border-slate-200">
@@ -454,7 +455,7 @@
               </span>
             ` : `
               <span class="inline-block px-2.5 py-1 text-xs font-semibold rounded-full border ${statusBadgeClass}">
-                ${item.status === 'Sudah Dibayar' ? '✅' : '🔴'} ${item.status}
+                ${statusEfektif === 'Sudah Dibayar' ? '✅' : '🔴'} ${statusEfektif}
               </span>
             `)}
           </td>
@@ -498,11 +499,12 @@
       const dateVal = document.getElementById('inputTanggal').value;
       if (!dateVal) return;
 
-      const [year, month, day] = dateVal.split('-');
-      const formattedDate = `${day}/${month}/${year}`;
-
-      const inputMo = parseInt(month, 10) - 1;
-      const inputYr = parseInt(year, 10);
+      const parts = dateVal.split('-');
+      const inputYr = parseInt(parts[0], 10);
+      const inputMo = parseInt(parts[1], 10) - 1; 
+      const inputDa = parts[2];
+      
+      const formattedDate = `${inputDa}/${String(inputMo + 1).padStart(2, '0')}/${inputYr}`;
 
       if (inputMo !== selectedMonth || inputYr !== selectedYear) {
         selectedMonth = inputMo;
@@ -512,41 +514,42 @@
         initData();
       }
 
-      if (tableData[formattedDate]) {
-        const newPergi = document.getElementById('inputPergi').value.trim();
-        const newPulang = document.getElementById('inputPulang').value.trim();
-        const newKet = document.getElementById('inputKeterangan').value.trim();
+      setTimeout(() => {
+        if (tableData[formattedDate]) {
+          const newPergi = document.getElementById('inputPergi').value.trim();
+          const newPulang = document.getElementById('inputPulang').value.trim();
+          const newKet = document.getElementById('inputKeterangan').value.trim();
 
-        if (newPergi) {
-          const oldPergi = tableData[formattedDate].pergi;
-          tableData[formattedDate].pergi = (oldPergi && oldPergi !== '-') ? `${oldPergi}, ${newPergi}` : newPergi;
+          if (newPergi) {
+            const oldPergi = tableData[formattedDate].pergi;
+            tableData[formattedDate].pergi = (oldPergi && oldPergi !== '-') ? `${oldPergi}, ${newPergi}` : newPergi;
+          }
+
+          if (newPulang) {
+            const oldPulang = tableData[formattedDate].pulang;
+            tableData[formattedDate].pulang = (oldPulang && oldPulang !== '-') ? `${oldPulang}, ${newPulang}` : newPulang;
+          }
+
+          if (newKet) {
+            const oldKet = tableData[formattedDate].keterangan;
+            tableData[formattedDate].keterangan = (oldKet && oldKet !== '-') ? `${oldKet}, ${newKet}` : newKet;
+          }
+
+          saveData();
+
+          document.getElementById('inputPergi').value = '';
+          document.getElementById('inputPulang').value = '';
+          document.getElementById('inputKeterangan').value = '';
+          alert(`Data reimburse berhasil ditambahkan ke tanggal ${formattedDate}!`);
         }
-
-        if (newPulang) {
-          const oldPulang = tableData[formattedDate].pulang;
-          tableData[formattedDate].pulang = (oldPulang && oldPulang !== '-') ? `${oldPulang}, ${newPulang}` : newPulang;
-        }
-
-        if (newKet) {
-          const oldKet = tableData[formattedDate].keterangan;
-          tableData[formattedDate].keterangan = (oldKet && oldKet !== '-') ? `${oldKet}, ${newKet}` : newKet;
-        }
-
-        saveData();
-
-        document.getElementById('inputPergi').value = '';
-        document.getElementById('inputPulang').value = '';
-        document.getElementById('inputKeterangan').value = '';
-        alert(`Data reimburse berhasil ditambahkan ke tanggal ${formattedDate}!`);
-      } else {
-        alert("Terjadi kesalahan pada format tanggal!");
-      }
+      }, 100);
     }
 
     function updateHariFromInput() {
       const dateVal = document.getElementById('inputTanggal').value;
       if (dateVal) {
-        const d = new Date(dateVal);
+        const parts = dateVal.split('-');
+        const d = new Date(parts[0], parts[1] - 1, parts[2]);
         document.getElementById('inputHari').value = NAMA_HARI[d.getDay()];
       }
     }
@@ -614,7 +617,7 @@
           `"${item.pulang || '-'}"`,
           `"${item.keterangan || '-'}"`,
           `"${total}"`,
-          `"${(!item.pergi && !item.pulang && !item.keterangan) ? '-' : item.status}"`
+          `"${(!item.pergi && !item.pulang && !item.keterangan) ? '-' : (item.status || 'Belum Dibayar')}"`
         ].join(",");
         csvContent += row + "\n";
       });
@@ -636,8 +639,6 @@
       document.getElementById('selectBulan').value = selectedMonth;
       document.getElementById('selectTahun').value = selectedYear;
 
-      initData();
-      
       const yr = selectedYear;
       const mo = String(selectedMonth + 1).padStart(2, '0');
       const da = String(today.getDate()).padStart(2, '0');
@@ -645,7 +646,8 @@
       const inputTgl = document.getElementById('inputTanggal');
       inputTgl.value = `${yr}-${mo}-${da}`;
       updateHariFromInput();
-      
+
+      initData();
       updateRoleUI();
     };
   </script>
