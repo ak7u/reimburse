@@ -131,6 +131,43 @@
       </div>
     </div>
 
+    <!-- TABEL RINGKASAN STATUS PEMBAYARAN -->
+    <div class="bg-white rounded-xl shadow-sm p-5 border border-slate-200">
+      <h4 class="text-sm font-bold text-slate-800 uppercase tracking-wider mb-3 flex items-center gap-2">
+        <i data-lucide="pie-chart" class="w-4 h-4 text-blue-600"></i> Ringkasan Status Pembayaran
+      </h4>
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        
+        <!-- Box Sudah Dibayar -->
+        <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-lg flex justify-between items-center">
+          <div>
+            <p class="text-xs font-semibold text-emerald-700 uppercase">🟢 Sudah Dibayar</p>
+            <p id="totalSudahDibayar" class="text-lg font-bold text-emerald-800 font-mono mt-1">Rp0</p>
+          </div>
+          <i data-lucide="check-circle-2" class="w-8 h-8 text-emerald-500 opacity-80"></i>
+        </div>
+
+        <!-- Box Belum Dibayar -->
+        <div class="bg-rose-50 border border-rose-200 p-4 rounded-lg flex justify-between items-center">
+          <div>
+            <p class="text-xs font-semibold text-rose-700 uppercase">🔴 Belum Dibayar</p>
+            <p id="totalBelumDibayar" class="text-lg font-bold text-rose-800 font-mono mt-1">Rp0</p>
+          </div>
+          <i data-lucide="clock" class="w-8 h-8 text-rose-500 opacity-80"></i>
+        </div>
+
+        <!-- Box Total Keseluruhan -->
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg flex justify-between items-center">
+          <div>
+            <p class="text-xs font-semibold text-slate-600 uppercase">📊 Total Keseluruhan</p>
+            <p id="summaryGrandTotal" class="text-lg font-bold text-slate-800 font-mono mt-1">Rp0</p>
+          </div>
+          <i data-lucide="wallet" class="w-8 h-8 text-slate-500 opacity-80"></i>
+        </div>
+
+      </div>
+    </div>
+
   </div>
 
   <script>
@@ -184,7 +221,10 @@
     function renderTable() {
       const tbody = document.getElementById('tableBody');
       tbody.innerHTML = '';
+      
       let totalKeseluruhan = 0;
+      let totalSudahDibayar = 0;
+      let totalBelumDibayar = 0;
 
       const isAdmin = currentRole === 'admin';
 
@@ -193,7 +233,13 @@
         const nominalPergi = parseNominal(item.pergi);
         const nominalPulang = parseNominal(item.pulang);
         const totalBaris = nominalPergi + nominalPulang;
+        
         totalKeseluruhan += totalBaris;
+        if (item.status === 'Sudah Dibayar') {
+          totalSudahDibayar += totalBaris;
+        } else {
+          totalBelumDibayar += totalBaris;
+        }
 
         const tr = document.createElement('tr');
         tr.className = "hover:bg-slate-50 transition border-b border-slate-200 text-xs sm:text-sm";
@@ -202,7 +248,6 @@
         if (item.status === 'Proses Verifikasi') statusBadgeClass = "bg-amber-50 text-amber-700 border-amber-200";
         if (item.status === 'Sudah Dibayar') statusBadgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
 
-        // Style untuk membedakan sel yang bisa diedit di mode Admin
         const editableClass = isAdmin ? "bg-purple-50/30 focus:bg-white focus:ring-2 focus:ring-purple-400 outline-none cursor-text" : "";
 
         tr.innerHTML = `
@@ -243,11 +288,15 @@
         tbody.appendChild(tr);
       });
 
+      // Update nilai pada tabel footer dan ringkasan status di bawah
       document.getElementById('grandTotal').innerText = formatRupiah(totalKeseluruhan);
+      document.getElementById('summaryGrandTotal').innerText = formatRupiah(totalKeseluruhan);
+      document.getElementById('totalSudahDibayar').innerText = formatRupiah(totalSudahDibayar);
+      document.getElementById('totalBelumDibayar').innerText = formatRupiah(totalBelumDibayar);
+
       lucide.createIcons();
     }
 
-    // Fungsi Admin Mengubah Sel Langsung dari Tabel
     function updateCell(dateStr, field, val) {
       if (currentRole !== 'admin') return;
       tableData[dateStr][field] = val.trim();
