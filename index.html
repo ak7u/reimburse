@@ -44,7 +44,7 @@
       <p class="text-sm font-medium">Periode ini telah <b>dikunci</b>. Pengisian data baru untuk bulan lalu sudah ditutup. Masuk Mode Admin untuk melakukan penyesuaian data.</p>
     </div>
 
-    <!-- FORM INPUT (Tampilan Pengisi) -->
+    <!-- FORM INPUT (Dapat Digunakan oleh Pengisi & Admin) -->
     <div id="formSection" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 no-print">
       <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
         <i data-lucide="plus-circle" class="text-blue-600"></i> Form Input Reimburse
@@ -241,12 +241,10 @@
       return false;
     }
 
-    // FUNGSI FORMAT LIVE NOMINAL RIBUAN SAAT DIKETIK (DIPERBAIKI)
     function formatLiveNominal(inputEl) {
       const originalValue = inputEl.value;
       if (!originalValue) return;
 
-      // Hapus titik lama lalu format ulang angka per ribuan
       const cleanValue = originalValue.replace(/\./g, '');
       inputEl.value = cleanValue.replace(/(\d+)/g, function(match) {
         return parseInt(match, 10).toLocaleString('id-ID');
@@ -529,9 +527,11 @@
       if (currentRole === 'admin') {
         roleText.innerText = "Admin (Finance)";
         roleBtn.className = "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 shadow-sm";
-        formSection.classList.add('hidden');
+        
+        // Mode Admin selalu dapat mengakses Form Input
+        formSection.classList.remove('hidden');
         lockedNotice.classList.add('hidden');
-        tableHint.innerText = "Mode Admin: Sel berlatar ungu muda dapat diklik langsung untuk mengedit/mengoreksi data.";
+        tableHint.innerText = "Mode Admin: Bisa mengisi data via form DAN mengedit sel berlatar ungu muda secara langsung.";
         tableHint.className = "text-xs text-purple-600 font-medium mt-1";
       } else {
         roleText.innerText = "Pengisi";
