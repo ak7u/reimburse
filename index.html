@@ -221,7 +221,6 @@
   </div>
 
   <script>
-    // --- KONFIGURASI FIREBASE (SUDAH DILENGKAPI DATABASEURL) ---
     const firebaseConfig = {
       apiKey: "AIzaSyDPE8QEXJjJqozRlmcLoPBQhOWqw9VTHBM",
       authDomain: "reimburse-app-ba07a.firebaseapp.com",
@@ -271,6 +270,7 @@
       });
     }
 
+    // Generator Baris Tanggal yang Robust Tanpa Glitch Timezone
     function generateEmptyMonthData() {
       const emptyData = {};
       const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
@@ -279,6 +279,8 @@
         const dayNum = String(i).padStart(2, '0');
         const monthNum = String(selectedMonth + 1).padStart(2, '0');
         const dateStr = `${dayNum}/${monthNum}/${selectedYear}`;
+        
+        // Memakai parameter explicit (year, month, day) untuk menghindari masalah timezone UTC
         const dateObj = new Date(selectedYear, selectedMonth, i);
         const hariStr = NAMA_HARI[dateObj.getDay()];
         
@@ -307,11 +309,16 @@
         const baseEmpty = generateEmptyMonthData();
         
         if (saved) {
-          Object.keys(baseEmpty).forEach(dateKey => {
-            if (saved[dateKey]) {
+          Object.keys(saved).forEach(dateKey => {
+            if (baseEmpty[dateKey]) {
+              baseEmpty[dateKey] = saved[dateKey];
+            } else {
               baseEmpty[dateKey] = saved[dateKey];
             }
           });
+        } else {
+          // Jika di Firebase belum ada data bulan ini, langsung simpan struktur baris kosong
+          db.ref(storageKey).set(baseEmpty);
         }
         
         tableData = baseEmpty;
@@ -499,13 +506,15 @@
       const dateVal = document.getElementById('inputTanggal').value;
       if (!dateVal) return;
 
+      // Parsing Tanggal YYYY-MM-DD
       const parts = dateVal.split('-');
       const inputYr = parseInt(parts[0], 10);
-      const inputMo = parseInt(parts[1], 10) - 1; 
+      const inputMo = parseInt(parts[1], 10) - 1; // Konversi ke 0-indexed bulan JS
       const inputDa = parts[2];
       
       const formattedDate = `${inputDa}/${String(inputMo + 1).padStart(2, '0')}/${inputYr}`;
 
+      // Pindah periode otomatis jika input tanggal beda dengan dropdown
       if (inputMo !== selectedMonth || inputYr !== selectedYear) {
         selectedMonth = inputMo;
         selectedYear = inputYr;
@@ -514,35 +523,46 @@
         initData();
       }
 
+      // Beri sedikit jeda 100ms agar initData selesai membaca Firebase jika berpindah periode
       setTimeout(() => {
-        if (tableData[formattedDate]) {
-          const newPergi = document.getElementById('inputPergi').value.trim();
-          const newPulang = document.getElementById('inputPulang').value.trim();
-          const newKet = document.getElementById('inputKeterangan').value.trim();
-
-          if (newPergi) {
-            const oldPergi = tableData[formattedDate].pergi;
-            tableData[formattedDate].pergi = (oldPergi && oldPergi !== '-') ? `${oldPergi}, ${newPergi}` : newPergi;
-          }
-
-          if (newPulang) {
-            const oldPulang = tableData[formattedDate].pulang;
-            tableData[formattedDate].pulang = (oldPulang && oldPulang !== '-') ? `${oldPulang}, ${newPulang}` : newPulang;
-          }
-
-          if (newKet) {
-            const oldKet = tableData[formattedDate].keterangan;
-            tableData[formattedDate].keterangan = (oldKet && oldKet !== '-') ? `${oldKet}, ${newKet}` : newKet;
-          }
-
-          saveData();
-
-          document.getElementById('inputPergi').value = '';
-          document.getElementById('inputPulang').value = '';
-          document.getElementById('inputKeterangan').value = '';
-          alert(`Data reimburse berhasil ditambahkan ke tanggal ${formattedDate}!`);
+        if (!tableData[formattedDate]) {
+          const dObj = new Date(inputYr, inputMo, parseInt(inputDa, 10));
+          tableData[formattedDate] = {
+            tanggal: formattedDate,
+            hari: NAMA_HARI[dObj.getDay()],
+            pergi: '',
+            pulang: '',
+            keterangan: '',
+            status: 'Belum Dibayar'
+          };
         }
-      }, 100);
+
+        const newPergi = document.getElementById('inputPergi').value.trim();
+        const newPulang = document.getElementById('inputPulang').value.trim();
+        const newKet = document.getElementById('inputKeterangan').value.trim();
+
+        if (newPergi) {
+          const oldPergi = tableData[formattedDate].pergi;
+          tableData[formattedDate].pergi = (oldPergi && oldPergi !== '-') ? `${oldPergi}, ${newPergi}` : newPergi;
+        }
+
+        if (newPulang) {
+          const oldPulang = tableData[formattedDate].pulang;
+          tableData[formattedDate].pulang = (oldPulang && oldPulang !== '-') ? `${oldPulang}, ${newPulang}` : newPulang;
+        }
+
+        if (newKet) {
+          const oldKet = tableData[formattedDate].keterangan;
+          tableData[formattedDate].keterangan = (oldKet && oldKet !== '-') ? `${oldKet}, ${newKet}` : newKet;
+        }
+
+        saveData();
+
+        document.getElementById('inputPergi').value = '';
+        document.getElementById('inputPulang').value = '';
+        document.getElementById('inputKeterangan').value = '';
+        alert(`Data reimburse berhasil ditambahkan ke tanggal ${formattedDate}!`);
+      }, 150);
     }
 
     function updateHariFromInput() {
