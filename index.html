@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sistem Reimbursement Otomatis</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white; padding: 0; }
+      .container-box { box-shadow: none; border: none; }
+    }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen text-slate-800 p-4 md:p-8">
+
+  <div class="max-w-6xl mx-auto space-y-6">
+    
+    <!-- HEADER & ROLE TOGGLE WITH PIN PROTECT -->
+    <header class="bg-white p-6 rounded-xl shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+      <div>
+        <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
+          <i data-lucide="receipt" class="text-blue-600"></i> Sistem Reimbursement
+        </h1>
+        <p class="text-sm text-slate-500 mt-1">Rekap Pengajuan Transport & Status Pembayaran</p>
+      </div>
+      
+      <div class="flex items-center gap-3 no-print">
+        <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Mode:</span>
+        <button id="toggleRoleBtn" onclick="handleRoleSwitch()" class="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100">
+          <i id="roleIcon" data-lucide="user"></i>
+          <span id="roleText">Pengisi</span>
+        </button>
+      </div>
+    </header>
+
+    <!-- FORM INPUT (Tampilan Pengisi) -->
+    <div id="formSection" class="bg-white p-6 rounded-xl shadow-sm no-print">
+      <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
+        <i data-lucide="plus-circle" class="text-blue-600"></i> Form Input Reimburse
+      </h2>
+      
+      <form id="reimburseForm" onsubmit="submitData(event)" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Tanggal</label>
+          <input type="date" id="inputTanggal" onchange="updateHariFromInput()" required 
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Hari</label>
+          <input type="text" id="inputHari" readonly 
+                 class="w-full px-3 py-2 border border-slate-200 bg-slate-50 rounded-lg text-sm text-slate-500 font-medium">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Pergi <span class="text-slate-400 font-normal">(cth: 8000)</span></label>
+          <input type="text" id="inputPergi" placeholder="8000" 
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-600 mb-1">Pulang <span class="text-slate-400 font-normal">(cth: 15.000)</span></label>
+          <input type="text" id="inputPulang" placeholder="15.000" 
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+
+        <div class="md:col-span-2 lg:col-span-3">
+          <label class="block text-xs font-medium text-slate-600 mb-1">Keterangan</label>
+          <input type="text" id="inputKeterangan" placeholder="Kelas + Rapat" 
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+        </div>
+
+        <div class="flex items-end">
+          <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg text-sm transition flex items-center justify-center gap-2 shadow-sm">
+            <i data-lucide="send" class="w-4 h-4"></i> Kirim Reimburse
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <!-- TABEL REKAPITULASI SPREADSHEET -->
+    <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
+      
+      <!-- Toolbar Tabel -->
+      <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
+        <div>
+          <h3 class="font-semibold text-slate-800">Tabel Rekapitulasi - November 2026</h3>
+          <p id="tableHint" class="text-xs text-slate-500">Laporan rekap pengajuan reimbursement bulanan.</p>
+        </div>
+        
+        <div class="flex items-center gap-2 no-print">
+          <button onclick="exportCSV()" class="px-3 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
+            <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> Ekspor CSV
+          </button>
+          <button onclick="window.print()" class="px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-lg text-xs font-medium flex items-center gap-1.5 transition">
+            <i data-lucide="printer" class="w-4 h-4"></i> Cetak / PDF
+          </button>
+        </div>
+      </div>
+
+      <!-- Container Tabel -->
+      <div class="overflow-x-auto">
+        <table class="w-full text-sm text-left border-collapse">
+          <thead>
+            <tr class="bg-sky-100 text-slate-800 border-b border-slate-300 text-xs uppercase font-bold tracking-wider">
+              <th class="py-3 px-4 text-center border-r border-slate-300 w-28">Tanggal</th>
+              <th class="py-3 px-4 text-center border-r border-slate-300 w-24">Hari</th>
+              <th class="py-3 px-4 border-r border-slate-300">Pergi</th>
+              <th class="py-3 px-4 border-r border-slate-300">Pulang</th>
+              <th class="py-3 px-4 border-r border-slate-300">Keterangan</th>
+              <th class="py-3 px-4 text-right border-r border-slate-300 w-32">Total</th>
+              <th class="py-3 px-4 text-center w-40">Status</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody" class="divide-y divide-slate-200">
+            <!-- Data baris dirender lewat JavaScript -->
+          </tbody>
+          <tfoot>
+            <tr class="bg-slate-100 font-bold text-slate-900 border-t-2 border-slate-400">
+              <td colspan="5" class="py-3 px-4 text-right border-r border-slate-300 uppercase">Grand Total:</td>
+              <td id="grandTotal" class="py-3 px-4 text-right text-blue-700 border-r border-slate-300 font-mono text-base">Rp0</td>
+              <td class="bg-slate-100"></td>
+            </tr>
+          </tfoot>
+        </table>
+      </div>
+    </div>
+
+  </div>
+
+  <script>
+    const ADMIN_PIN = "1515"; 
+    const NAMA_HARI = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
+    let currentRole = 'user'; 
+    let tableData = {};
+
+    function initData() {
+      const saved = localStorage.getItem('reimburse_2026_11');
+      if (saved) {
+        tableData = JSON.parse(saved);
+      } else {
+        tableData = {};
+        for (let i = 1; i <= 30; i++) {
+          const dayNum = String(i).padStart(2, '0');
+          const dateStr = `${dayNum}/11/2026`;
+          const dateObj = new Date(2026, 10, i);
+          const hariStr = NAMA_HARI[dateObj.getDay()];
+          
+          tableData[dateStr] = {
+            tanggal: dateStr,
+            hari: hariStr,
+            pergi: '',
+            pulang: '',
+            keterangan: '',
+            status: 'Belum Dibayar'
+          };
+        }
+        saveData();
+      }
+    }
+
+    function saveData() {
+      localStorage.setItem('reimburse_2026_11', JSON.stringify(tableData));
+    }
+
+    function parseNominal(str) {
+      if (!str) return 0;
+      const cleanStr = String(str).replace(/\./g, '');
+      const matches = cleanStr.match(/\d+/g);
+      if (!matches) return 0;
+      return matches.reduce((acc, num) => acc + parseInt(num, 10), 0);
+    }
+
+    function formatRupiah(num) {
+      return "Rp" + num.toLocaleString('id-ID');
+    }
+
+    // Render Tabel (Dapat diedit langsung jika currentRole === 'admin')
+    function renderTable() {
+      const tbody = document.getElementById('tableBody');
+      tbody.innerHTML = '';
+      let totalKeseluruhan = 0;
+
+      const isAdmin = currentRole === 'admin';
+
+      Object.keys(tableData).forEach(dateStr => {
+        const item = tableData[dateStr];
+        const nominalPergi = parseNominal(item.pergi);
+        const nominalPulang = parseNominal(item.pulang);
+        const totalBaris = nominalPergi + nominalPulang;
+        totalKeseluruhan += totalBaris;
+
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-50 transition border-b border-slate-200 text-xs sm:text-sm";
+
+        let statusBadgeClass = "bg-rose-50 text-rose-700 border-rose-200";
+        if (item.status === 'Proses Verifikasi') statusBadgeClass = "bg-amber-50 text-amber-700 border-amber-200";
+        if (item.status === 'Sudah Dibayar') statusBadgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
+
+        // Style untuk membedakan sel yang bisa diedit di mode Admin
+        const editableClass = isAdmin ? "bg-purple-50/30 focus:bg-white focus:ring-2 focus:ring-purple-400 outline-none cursor-text" : "";
+
+        tr.innerHTML = `
+          <td class="py-2.5 px-4 text-center font-mono font-medium text-slate-600 border-r border-slate-200">${item.tanggal}</td>
+          <td class="py-2.5 px-4 text-center font-medium text-slate-700 border-r border-slate-200">${item.hari}</td>
+          
+          <!-- Sel Pergi, Pulang, & Keterangan (Editable di Mode Admin) -->
+          <td class="py-2.5 px-4 border-r border-slate-200 text-slate-800 ${editableClass}" 
+              contenteditable="${isAdmin}" 
+              onblur="updateCell('${dateStr}', 'pergi', this.innerText)">${item.pergi}</td>
+
+          <td class="py-2.5 px-4 border-r border-slate-200 text-slate-800 ${editableClass}" 
+              contenteditable="${isAdmin}" 
+              onblur="updateCell('${dateStr}', 'pulang', this.innerText)">${item.pulang}</td>
+
+          <td class="py-2.5 px-4 border-r border-slate-200 text-slate-800 ${editableClass}" 
+              contenteditable="${isAdmin}" 
+              onblur="updateCell('${dateStr}', 'keterangan', this.innerText)">${item.keterangan}</td>
+          
+          <td class="py-2.5 px-4 text-right font-mono font-semibold text-slate-800 border-r border-slate-200">${formatRupiah(totalBaris)}</td>
+          
+          <!-- Status Pembayaran Admin -->
+          <td class="py-2.5 px-3 text-center">
+            ${isAdmin ? `
+              <select onchange="updateStatus('${dateStr}', this.value)" class="text-xs font-semibold py-1 px-2 rounded border focus:outline-none cursor-pointer ${statusBadgeClass}">
+                <option value="Belum Dibayar" ${item.status === 'Belum Dibayar' ? 'selected' : ''}>🔴 Belum Dibayar</option>
+                <option value="Proses Verifikasi" ${item.status === 'Proses Verifikasi' ? 'selected' : ''}>🟡 Proses Verifikasi</option>
+                <option value="Sudah Dibayar" ${item.status === 'Sudah Dibayar' ? 'selected' : ''}>🟢 Sudah Dibayar</option>
+              </select>
+            ` : `
+              <span class="inline-block px-2.5 py-1 text-xs font-semibold rounded-full border ${statusBadgeClass}">
+                ${item.status === 'Sudah Dibayar' ? '✅' : item.status === 'Proses Verifikasi' ? '⏳' : '🔴'} ${item.status}
+              </span>
+            `}
+          </td>
+        `;
+
+        tbody.appendChild(tr);
+      });
+
+      document.getElementById('grandTotal').innerText = formatRupiah(totalKeseluruhan);
+      lucide.createIcons();
+    }
+
+    // Fungsi Admin Mengubah Sel Langsung dari Tabel
+    function updateCell(dateStr, field, val) {
+      if (currentRole !== 'admin') return;
+      tableData[dateStr][field] = val.trim();
+      saveData();
+      renderTable();
+    }
+
+    function updateStatus(dateStr, newStatus) {
+      tableData[dateStr].status = newStatus;
+      saveData();
+      renderTable();
+    }
+
+    function submitData(e) {
+      e.preventDefault();
+      const dateVal = document.getElementById('inputTanggal').value;
+      if (!dateVal) return;
+
+      const [year, month, day] = dateVal.split('-');
+      const formattedDate = `${day}/${month}/${year}`;
+
+      if (tableData[formattedDate]) {
+        const newPergi = document.getElementById('inputPergi').value.trim();
+        const newPulang = document.getElementById('inputPulang').value.trim();
+        const newKet = document.getElementById('inputKeterangan').value.trim();
+
+        if (newPergi) {
+          const oldPergi = tableData[formattedDate].pergi;
+          tableData[formattedDate].pergi = oldPergi ? `${oldPergi}, ${newPergi}` : newPergi;
+        }
+
+        if (newPulang) {
+          const oldPulang = tableData[formattedDate].pulang;
+          tableData[formattedDate].pulang = oldPulang ? `${oldPulang}, ${newPulang}` : newPulang;
+        }
+
+        if (newKet) {
+          const oldKet = tableData[formattedDate].keterangan;
+          tableData[formattedDate].keterangan = oldKet ? `${oldKet}, ${newKet}` : newKet;
+        }
+
+        saveData();
+        renderTable();
+
+        document.getElementById('inputPergi').value = '';
+        document.getElementById('inputPulang').value = '';
+        document.getElementById('inputKeterangan').value = '';
+        alert(`Data reimburse berhasil ditambahkan ke tanggal ${formattedDate}!`);
+      } else {
+        alert("Tanggal di luar rentang bulan November 2026!");
+      }
+    }
+
+    function updateHariFromInput() {
+      const dateVal = document.getElementById('inputTanggal').value;
+      if (dateVal) {
+        const d = new Date(dateVal);
+        document.getElementById('inputHari').value = NAMA_HARI[d.getDay()];
+      }
+    }
+
+    function handleRoleSwitch() {
+      if (currentRole === 'user') {
+        const inputPin = prompt("Masukkan PIN Khusus Admin (Finance):");
+        if (inputPin === ADMIN_PIN) {
+          currentRole = 'admin';
+          updateRoleUI();
+        } else if (inputPin !== null) {
+          alert("PIN Salah! Akses ditolak.");
+        }
+      } else {
+        currentRole = 'user';
+        updateRoleUI();
+      }
+    }
+
+    function updateRoleUI() {
+      const roleText = document.getElementById('roleText');
+      const roleBtn = document.getElementById('toggleRoleBtn');
+      const formSection = document.getElementById('formSection');
+      const tableHint = document.getElementById('tableHint');
+
+      if (currentRole === 'admin') {
+        roleText.innerText = "Admin (Finance)";
+        roleBtn.className = "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100";
+        formSection.classList.add('hidden');
+        tableHint.innerText = "Mode Admin: Klik langsung sel pada tabel untuk mengedit/mengoreksi data.";
+        tableHint.className = "text-xs text-purple-600 font-medium";
+      } else {
+        roleText.innerText = "Pengisi";
+        roleBtn.className = "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100";
+        formSection.classList.remove('hidden');
+        tableHint.innerText = "Laporan rekap pengajuan reimbursement bulanan.";
+        tableHint.className = "text-xs text-slate-500";
+      }
+      renderTable();
+    }
+
+    function exportCSV() {
+      let csvContent = "data:text/csv;charset=utf-8,Tanggal,Hari,Pergi,Pulang,Keterangan,Total,Status\n";
+      Object.keys(tableData).forEach(dateStr => {
+        const item = tableData[dateStr];
+        const total = parseNominal(item.pergi) + parseNominal(item.pulang);
+        const row = [
+          `"${item.tanggal}"`,
+          `"${item.hari}"`,
+          `"${item.pergi}"`,
+          `"${item.pulang}"`,
+          `"${item.keterangan}"`,
+          `"${total}"`,
+          `"${item.status}"`
+        ].join(",");
+        csvContent += row + "\n";
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "rekap_reimburse_nov_2026.csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    window.onload = () => {
+      initData();
+      const today = new Date(2026, 10, 5);
+      const yr = today.getFullYear();
+      const mo = String(today.getMonth() + 1).padStart(2, '0');
+      const da = String(today.getDate()).padStart(2, '0');
+      
+      const inputTgl = document.getElementById('inputTanggal');
+      inputTgl.value = `${yr}-${mo}-${da}`;
+      updateHariFromInput();
+      
+      renderTable();
+    };
+  </script>
+</body>
+</html>
