@@ -3,11 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sistem Reimbursement Otomatis</title>
+  <title>Sistem Reimbursement Otomatis (Cloud Sync)</title>
   <!-- Tailwind CSS CDN -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Firebase SDK (v9 Compatibility Mode) -->
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
   <style>
     @media print {
       .no-print { display: none !important; }
@@ -26,7 +29,10 @@
         <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
           <i data-lucide="receipt" class="text-blue-600"></i> Sistem Reimbursement
         </h1>
-        <p class="text-sm text-slate-500 mt-1">Rekap Pengajuan Transport & Status Pembayaran</p>
+        <p class="text-sm text-slate-500 mt-1 flex items-center gap-1.5">
+          <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+          Rekap Pengajuan Transport & Status Pembayaran (Realtime Cloud)
+        </p>
       </div>
       
       <div class="flex items-center gap-3 no-print">
@@ -220,6 +226,21 @@
   </div>
 
   <script>
+    // --- KONFIGURASI FIREBASE ---
+    const firebaseConfig = {
+    apiKey: "AIzaSyDPE8QEXJjJqozRlmcLoPBQhOWqw9VTHBM",
+    authDomain: "reimburse-app-ba07a.firebaseapp.com",
+    projectId: "reimburse-app-ba07a",
+    storageBucket: "reimburse-app-ba07a.firebasestorage.app",
+    messagingSenderId: "474112487826",
+    appId: "1:474112487826:web:3569ba9be82397e177914b",
+    measurementId: "G-2Y9RZHFMLV"
+  };
+
+    // Inisialisasi Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
     const ADMIN_PIN = "1515"; 
     const NAMA_HARI = ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"];
     const NAMA_BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
@@ -254,43 +275,51 @@
       });
     }
 
+    // Mendengarkan Perubahan Data secara Real-time dari Firebase Cloud
     function initData() {
       const storageKey = getStorageKey();
-      const saved = localStorage.getItem(storageKey);
-      
-      if (saved) {
-        tableData = JSON.parse(saved);
-        Object.keys(tableData).forEach(k => {
-          if (tableData[k].status === 'Proses Verifikasi') {
-            tableData[k].status = 'Belum Dibayar';
-          }
-        });
-      } else {
-        tableData = {};
-        const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
+      const dbRef = db.ref(storageKey);
+
+      dbRef.on('value', (snapshot) => {
+        const saved = snapshot.val();
         
-        for (let i = 1; i <= daysInMonth; i++) {
-          const dayNum = String(i).padStart(2, '0');
-          const monthNum = String(selectedMonth + 1).padStart(2, '0');
-          const dateStr = `${dayNum}/${monthNum}/${selectedYear}`;
-          const dateObj = new Date(selectedYear, selectedMonth, i);
-          const hariStr = NAMA_HARI[dateObj.getDay()];
+        if (saved) {
+          tableData = saved;
+          Object.keys(tableData).forEach(k => {
+            if (tableData[k].status === 'Proses Verifikasi') {
+              tableData[k].status = 'Belum Dibayar';
+            }
+          });
+        } else {
+          tableData = {};
+          const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
           
-          tableData[dateStr] = {
-            tanggal: dateStr,
-            hari: hariStr,
-            pergi: '',
-            pulang: '',
-            keterangan: '',
-            status: 'Belum Dibayar'
-          };
+          for (let i = 1; i <= daysInMonth; i++) {
+            const dayNum = String(i).padStart(2, '0');
+            const monthNum = String(selectedMonth + 1).padStart(2, '0');
+            const dateStr = `${dayNum}/${monthNum}/${selectedYear}`;
+            const dateObj = new Date(selectedYear, selectedMonth, i);
+            const hariStr = NAMA_HARI[dateObj.getDay()];
+            
+            tableData[dateStr] = {
+              tanggal: dateStr,
+              hari: hariStr,
+              pergi: '',
+              pulang: '',
+              keterangan: '',
+              status: 'Belum Dibayar'
+            };
+          }
+          saveData();
         }
-        saveData();
-      }
+        renderTable();
+      });
     }
 
+    // Menyimpan Data ke Firebase Cloud (Otomatis Tersinkron ke Seluruh Perangkat)
     function saveData() {
-      localStorage.setItem(getStorageKey(), JSON.stringify(tableData));
+      const storageKey = getStorageKey();
+      db.ref(storageKey).set(tableData);
     }
 
     function changePeriod() {
@@ -451,13 +480,11 @@
       if (currentRole !== 'admin') return;
       tableData[dateStr][field] = (val.trim() === '-' || val.trim() === '') ? '' : val.trim();
       saveData();
-      renderTable();
     }
 
     function updateStatus(dateStr, newStatus) {
       tableData[dateStr].status = newStatus;
       saveData();
-      renderTable();
     }
 
     function submitData(e) {
@@ -506,7 +533,6 @@
         }
 
         saveData();
-        renderTable();
 
         document.getElementById('inputPergi').value = '';
         document.getElementById('inputPulang').value = '';
@@ -553,7 +579,6 @@
         roleText.innerText = "Admin (Finance)";
         roleBtn.className = "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 shadow-sm";
         
-        // Mode Admin: Sembunyikan Form Input & Peringatan Kunci
         formSection.classList.add('hidden');
         lockedNotice.classList.add('hidden');
         
