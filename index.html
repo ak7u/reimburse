@@ -21,7 +21,7 @@
   <div class="max-w-6xl mx-auto space-y-6">
     
     <!-- HEADER & ROLE TOGGLE WITH PIN PROTECT -->
-    <header class="bg-white p-6 rounded-xl shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <header class="bg-white p-6 rounded-xl shadow-sm flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border border-slate-200">
       <div>
         <h1 class="text-2xl font-bold text-slate-900 flex items-center gap-2">
           <i data-lucide="receipt" class="text-blue-600"></i> Sistem Reimbursement
@@ -31,15 +31,21 @@
       
       <div class="flex items-center gap-3 no-print">
         <span class="text-xs font-semibold uppercase tracking-wider text-slate-400">Mode:</span>
-        <button id="toggleRoleBtn" onclick="handleRoleSwitch()" class="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100">
+        <button id="toggleRoleBtn" onclick="handleRoleSwitch()" class="flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 shadow-sm">
           <i id="roleIcon" data-lucide="user"></i>
           <span id="roleText">Pengisi</span>
         </button>
       </div>
     </header>
 
+    <!-- NOTIFIKASI KUNCI PERIODE LALU -->
+    <div id="lockedNotice" class="hidden bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-xl flex items-center gap-3 no-print">
+      <i data-lucide="lock" class="w-5 h-5 text-amber-600 flex-shrink-0"></i>
+      <p class="text-sm font-medium">Periode ini telah <b>dikunci</b>. Pengisian data baru untuk bulan lalu sudah ditutup. Masuk Mode Admin untuk melakukan penyesuaian data.</p>
+    </div>
+
     <!-- FORM INPUT (Tampilan Pengisi) -->
-    <div id="formSection" class="bg-white p-6 rounded-xl shadow-sm no-print">
+    <div id="formSection" class="bg-white p-6 rounded-xl shadow-sm border border-slate-200 no-print">
       <h2 class="text-lg font-semibold text-slate-800 mb-4 flex items-center gap-2">
         <i data-lucide="plus-circle" class="text-blue-600"></i> Form Input Reimburse
       </h2>
@@ -58,15 +64,15 @@
         </div>
 
         <div>
-          <label class="block text-xs font-medium text-slate-600 mb-1">Pergi <span class="text-slate-400 font-normal">(cth: 8000)</span></label>
-          <input type="text" id="inputPergi" placeholder="8000" 
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          <label class="block text-xs font-medium text-slate-600 mb-1">Pergi <span class="text-slate-400 font-normal">(cth: 8.000 atau 10.000(rapat))</span></label>
+          <input type="text" id="inputPergi" oninput="formatLiveNominal(this)" placeholder="8.000" 
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono">
         </div>
 
         <div>
           <label class="block text-xs font-medium text-slate-600 mb-1">Pulang <span class="text-slate-400 font-normal">(cth: 15.000)</span></label>
-          <input type="text" id="inputPulang" placeholder="15.000" 
-                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
+          <input type="text" id="inputPulang" oninput="formatLiveNominal(this)" placeholder="15.000" 
+                 class="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none font-mono">
         </div>
 
         <div class="md:col-span-2 lg:col-span-3">
@@ -86,13 +92,13 @@
     <!-- TABEL REKAPITULASI SPREADSHEET -->
     <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-slate-200">
       
-      <!-- Toolbar Tabel dengan Filter Bulan & Tahun -->
+      <!-- Toolbar Tabel dengan Selector Periode Bulan & Tahun -->
       <div class="p-4 bg-slate-50 border-b border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
         <div>
           <div class="flex items-center gap-2">
             <h3 class="font-semibold text-slate-800">Tabel Rekapitulasi - </h3>
             <!-- Selector Bulan & Tahun -->
-            <select id="selectBulan" onchange="changePeriod()" class="font-semibold text-slate-800 bg-white border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select id="selectBulan" onchange="changePeriod()" class="font-semibold text-slate-800 bg-white border border-slate-300 rounded px-2.5 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm">
               <option value="0">Januari</option>
               <option value="1">Februari</option>
               <option value="2">Maret</option>
@@ -107,7 +113,7 @@
               <option value="11">Desember</option>
             </select>
 
-            <select id="selectTahun" onchange="changePeriod()" class="font-semibold text-slate-800 bg-white border border-slate-300 rounded px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <select id="selectTahun" onchange="changePeriod()" class="font-semibold text-slate-800 bg-white border border-slate-300 rounded px-2.5 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer shadow-sm">
               <option value="2025">2025</option>
               <option value="2026" selected>2026</option>
               <option value="2027">2027</option>
@@ -127,7 +133,23 @@
         </div>
       </div>
 
-      <!-- Container Tabel -->
+      <!-- FILTER STATUS TAMPILAN TABEL -->
+      <div class="p-3 bg-slate-100/70 border-b border-slate-200 flex flex-wrap items-center gap-2 text-xs no-print">
+        <span class="font-semibold text-slate-500 mr-1 flex items-center gap-1">
+          <i data-lucide="filter" class="w-3.5 h-3.5"></i> Filter Status:
+        </span>
+        <button onclick="setFilter('semua')" id="btnFilterSemua" class="px-3 py-1 rounded-full font-medium transition bg-blue-600 text-white shadow-sm">
+          Semua Data <span id="countSemua" class="ml-1 opacity-80">(0)</span>
+        </button>
+        <button onclick="setFilter('Belum Dibayar')" id="btnFilterBelum" class="px-3 py-1 rounded-full font-medium transition bg-white text-slate-600 border border-slate-300 hover:bg-slate-200">
+          🔴 Belum Dibayar <span id="countBelum" class="ml-1 text-slate-400">(0)</span>
+        </button>
+        <button onclick="setFilter('Sudah Dibayar')" id="btnFilterSudah" class="px-3 py-1 rounded-full font-medium transition bg-white text-slate-600 border border-slate-300 hover:bg-slate-200">
+          🟢 Sudah Dibayar <span id="countSudah" class="ml-1 text-slate-400">(0)</span>
+        </button>
+      </div>
+
+      <!-- Container Tabel Utama -->
       <div class="overflow-x-auto">
         <table class="w-full text-sm text-left border-collapse">
           <thead>
@@ -163,7 +185,7 @@
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         
         <!-- Box Sudah Dibayar -->
-        <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-lg flex justify-between items-center">
+        <div class="bg-emerald-50 border border-emerald-200 p-4 rounded-lg flex justify-between items-center shadow-sm">
           <div>
             <p class="text-xs font-semibold text-emerald-700 uppercase">🟢 Sudah Dibayar</p>
             <p id="totalSudahDibayar" class="text-lg font-bold text-emerald-800 font-mono mt-1">Rp0</p>
@@ -172,7 +194,7 @@
         </div>
 
         <!-- Box Belum Dibayar -->
-        <div class="bg-rose-50 border border-rose-200 p-4 rounded-lg flex justify-between items-center">
+        <div class="bg-rose-50 border border-rose-200 p-4 rounded-lg flex justify-between items-center shadow-sm">
           <div>
             <p class="text-xs font-semibold text-rose-700 uppercase">🔴 Belum Dibayar</p>
             <p id="totalBelumDibayar" class="text-lg font-bold text-rose-800 font-mono mt-1">Rp0</p>
@@ -181,7 +203,7 @@
         </div>
 
         <!-- Box Total Keseluruhan -->
-        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg flex justify-between items-center">
+        <div class="bg-slate-50 border border-slate-200 p-4 rounded-lg flex justify-between items-center shadow-sm">
           <div>
             <p class="text-xs font-semibold text-slate-600 uppercase">📊 Total Keseluruhan</p>
             <p id="summaryGrandTotal" class="text-lg font-bold text-slate-800 font-mono mt-1">Rp0</p>
@@ -200,24 +222,50 @@
     const NAMA_BULAN = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
     
     let currentRole = 'user'; 
-    let selectedMonth = 10; // November (0 = Jan, 10 = Nov)
+    let selectedMonth = 10; 
     let selectedYear = 2026;
+    let activeFilter = 'semua'; 
     let tableData = {};
 
     function getStorageKey() {
       return `reimburse_${selectedYear}_${selectedMonth}`;
     }
 
-    // Inisialisasi Data berdasarkan Bulan & Tahun yang Dipilih
+    function isPastPeriod() {
+      const now = new Date();
+      const currentMo = now.getMonth();
+      const currentYr = now.getFullYear();
+
+      if (selectedYear < currentYr) return true;
+      if (selectedYear === currentYr && selectedMonth < currentMo) return true;
+      return false;
+    }
+
+    // FUNGSI FORMAT LIVE NOMINAL RIBUAN SAAT DIKETIK (DIPERBAIKI)
+    function formatLiveNominal(inputEl) {
+      const originalValue = inputEl.value;
+      if (!originalValue) return;
+
+      // Hapus titik lama lalu format ulang angka per ribuan
+      const cleanValue = originalValue.replace(/\./g, '');
+      inputEl.value = cleanValue.replace(/(\d+)/g, function(match) {
+        return parseInt(match, 10).toLocaleString('id-ID');
+      });
+    }
+
     function initData() {
       const storageKey = getStorageKey();
       const saved = localStorage.getItem(storageKey);
       
       if (saved) {
         tableData = JSON.parse(saved);
+        Object.keys(tableData).forEach(k => {
+          if (tableData[k].status === 'Proses Verifikasi') {
+            tableData[k].status = 'Belum Dibayar';
+          }
+        });
       } else {
         tableData = {};
-        // Dapatkan jumlah hari dalam bulan & tahun yang dipilih
         const daysInMonth = new Date(selectedYear, selectedMonth + 1, 0).getDate();
         
         for (let i = 1; i <= daysInMonth; i++) {
@@ -248,6 +296,26 @@
       selectedMonth = parseInt(document.getElementById('selectBulan').value, 10);
       selectedYear = parseInt(document.getElementById('selectTahun').value, 10);
       initData();
+      updateRoleUI();
+    }
+
+    function setFilter(filterType) {
+      activeFilter = filterType;
+      
+      const btns = {
+        'semua': document.getElementById('btnFilterSemua'),
+        'Belum Dibayar': document.getElementById('btnFilterBelum'),
+        'Sudah Dibayar': document.getElementById('btnFilterSudah')
+      };
+
+      Object.keys(btns).forEach(key => {
+        if (key === filterType) {
+          btns[key].className = "px-3 py-1 rounded-full font-medium transition bg-blue-600 text-white shadow-sm";
+        } else {
+          btns[key].className = "px-3 py-1 rounded-full font-medium transition bg-white text-slate-600 border border-slate-300 hover:bg-slate-200";
+        }
+      });
+
       renderTable();
     }
 
@@ -271,9 +339,11 @@
       let totalSudahDibayar = 0;
       let totalBelumDibayar = 0;
 
+      let cntSemua = 0, cntBelum = 0, cntSudah = 0;
+
       const isAdmin = currentRole === 'admin';
 
-      Object.keys(tableData).forEach(dateStr => {
+      Object.keys(tableData).forEach((dateStr, index) => {
         const item = tableData[dateStr];
         const nominalPergi = parseNominal(item.pergi);
         const nominalPulang = parseNominal(item.pulang);
@@ -286,14 +356,26 @@
           totalBelumDibayar += totalBaris;
         }
 
+        cntSemua++;
+        if (item.status === 'Sudah Dibayar') {
+          cntSudah++;
+        } else {
+          cntBelum++;
+        }
+
+        if (activeFilter !== 'semua' && item.status !== activeFilter) {
+          return;
+        }
+
         const tr = document.createElement('tr');
-        tr.className = "hover:bg-slate-50 transition border-b border-slate-200 text-xs sm:text-sm";
+        const rowBgClass = index % 2 === 0 ? "bg-white" : "bg-slate-50/60";
+        tr.className = `${rowBgClass} hover:bg-sky-50/50 transition border-b border-slate-200 text-xs sm:text-sm`;
 
-        let statusBadgeClass = "bg-rose-50 text-rose-700 border-rose-200";
-        if (item.status === 'Proses Verifikasi') statusBadgeClass = "bg-amber-50 text-amber-700 border-amber-200";
-        if (item.status === 'Sudah Dibayar') statusBadgeClass = "bg-emerald-50 text-emerald-700 border-emerald-200";
+        let statusBadgeClass = item.status === 'Sudah Dibayar' 
+          ? "bg-emerald-50 text-emerald-700 border-emerald-200" 
+          : "bg-rose-50 text-rose-700 border-rose-200";
 
-        const editableClass = isAdmin ? "bg-purple-50/30 focus:bg-white focus:ring-2 focus:ring-purple-400 outline-none cursor-text" : "";
+        const editableClass = isAdmin ? "bg-purple-50/40 focus:bg-white focus:ring-2 focus:ring-purple-400 outline-none cursor-text font-medium" : "";
 
         tr.innerHTML = `
           <td class="py-2.5 px-4 text-center font-mono font-medium text-slate-600 border-r border-slate-200">${item.tanggal}</td>
@@ -317,12 +399,11 @@
             ${isAdmin ? `
               <select onchange="updateStatus('${dateStr}', this.value)" class="text-xs font-semibold py-1 px-2 rounded border focus:outline-none cursor-pointer ${statusBadgeClass}">
                 <option value="Belum Dibayar" ${item.status === 'Belum Dibayar' ? 'selected' : ''}>🔴 Belum Dibayar</option>
-                <option value="Proses Verifikasi" ${item.status === 'Proses Verifikasi' ? 'selected' : ''}>🟡 Proses Verifikasi</option>
                 <option value="Sudah Dibayar" ${item.status === 'Sudah Dibayar' ? 'selected' : ''}>🟢 Sudah Dibayar</option>
               </select>
             ` : `
               <span class="inline-block px-2.5 py-1 text-xs font-semibold rounded-full border ${statusBadgeClass}">
-                ${item.status === 'Sudah Dibayar' ? '✅' : item.status === 'Proses Verifikasi' ? '⏳' : '🔴'} ${item.status}
+                ${item.status === 'Sudah Dibayar' ? '✅' : '🔴'} ${item.status}
               </span>
             `}
           </td>
@@ -330,6 +411,10 @@
 
         tbody.appendChild(tr);
       });
+
+      document.getElementById('countSemua').innerText = `(${cntSemua})`;
+      document.getElementById('countBelum').innerText = `(${cntBelum})`;
+      document.getElementById('countSudah').innerText = `(${cntSudah})`;
 
       document.getElementById('grandTotal').innerText = formatRupiah(totalKeseluruhan);
       document.getElementById('summaryGrandTotal').innerText = formatRupiah(totalKeseluruhan);
@@ -354,13 +439,18 @@
 
     function submitData(e) {
       e.preventDefault();
+      
+      if (currentRole !== 'admin' && isPastPeriod()) {
+        alert("Periode ini telah dikunci! Pengisian data baru untuk bulan lalu sudah ditutup.");
+        return;
+      }
+
       const dateVal = document.getElementById('inputTanggal').value;
       if (!dateVal) return;
 
       const [year, month, day] = dateVal.split('-');
       const formattedDate = `${day}/${month}/${year}`;
 
-      // Sesuaikan periode pilihan jika pengisi menginput tanggal bulan lain
       const inputMo = parseInt(month, 10) - 1;
       const inputYr = parseInt(year, 10);
 
@@ -432,17 +522,29 @@
       const roleBtn = document.getElementById('toggleRoleBtn');
       const formSection = document.getElementById('formSection');
       const tableHint = document.getElementById('tableHint');
+      const lockedNotice = document.getElementById('lockedNotice');
+
+      const isPast = isPastPeriod();
 
       if (currentRole === 'admin') {
         roleText.innerText = "Admin (Finance)";
-        roleBtn.className = "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100";
+        roleBtn.className = "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all bg-purple-50 text-purple-700 border border-purple-200 hover:bg-purple-100 shadow-sm";
         formSection.classList.add('hidden');
-        tableHint.innerText = "Mode Admin: Klik langsung sel pada tabel untuk mengedit/mengoreksi data.";
+        lockedNotice.classList.add('hidden');
+        tableHint.innerText = "Mode Admin: Sel berlatar ungu muda dapat diklik langsung untuk mengedit/mengoreksi data.";
         tableHint.className = "text-xs text-purple-600 font-medium mt-1";
       } else {
         roleText.innerText = "Pengisi";
-        roleBtn.className = "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100";
-        formSection.classList.remove('hidden');
+        roleBtn.className = "flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 shadow-sm";
+        
+        if (isPast) {
+          formSection.classList.add('hidden');
+          lockedNotice.classList.remove('hidden');
+        } else {
+          formSection.classList.remove('hidden');
+          lockedNotice.classList.add('hidden');
+        }
+
         tableHint.innerText = "Laporan rekap pengajuan reimbursement bulanan.";
         tableHint.className = "text-xs text-slate-500 mt-1";
       }
@@ -476,7 +578,7 @@
     }
 
     window.onload = () => {
-      const today = new Date(2026, 10, 5);
+      const today = new Date();
       selectedMonth = today.getMonth();
       selectedYear = today.getFullYear();
 
@@ -493,7 +595,7 @@
       inputTgl.value = `${yr}-${mo}-${da}`;
       updateHariFromInput();
       
-      renderTable();
+      updateRoleUI();
     };
   </script>
 </body>
